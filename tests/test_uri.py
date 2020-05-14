@@ -1,4 +1,4 @@
-from src.urlshow.url import extract
+from src.urishow.uri import extract
 import pytest
 
 
@@ -10,6 +10,6 @@ def test_extract_simple_single():
     ]
 
     for case in cases:
-        urls = extract(case)
-        assert len(urls) == 1
-        assert urls[0]   == case
+        uris = extract(case)
+        assert len(uris) == 1
+        assert uris[0]   == case
