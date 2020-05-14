@@ -22,10 +22,11 @@ def _draw_header(window, width, num_uris):
 def _draw_content(window, state, uris):
     for index, uri in enumerate(uris[state.top:state.bottom]):
         line = '{:>7} {}'.format(index + state.top + 1, uri)
-        if len(line) > state.width:
+        if len(line) > state.width - 2:  # Apply wrapping if the line is too long.
             offset = 12
             split = int(state.width / 2) + offset
-            line = line[:split] + '...' + line[len(line) - split + offset * 2 + 3:]
+            line = line[:split] + '...' + line[len(line) - split + offset * 2 + 5:]
+            window.addstr(index + 2, state.width - 1, '>')
         window.addstr(index + 2, 0, line)
     window.addstr(state.current - state.top + 2, 0, '-> ', curses.A_REVERSE)
 
