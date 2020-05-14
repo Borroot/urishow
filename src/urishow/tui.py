@@ -5,6 +5,9 @@ import curses.ascii
 
 
 class _State:
+    """
+    A class to represent the current state of the window and pointer.
+    """
     def __init__(self, height, width, top, bottom, current):
         self.height  = height   # Total height of the window.
         self.width   = width    # Total width  of the window.
@@ -20,6 +23,9 @@ def _draw_header(window, width, num_uris):
 
 
 def _draw_content(window, state, uris):
+    """
+    Draw as much uris as there is space for plus the pointer.
+    """
     for index, uri in enumerate(uris[state.top:state.bottom + 1]):
         line = '{:>7} {}'.format(index + state.top + 1, uri)
         if len(line) > state.width - 2:  # apply wrapping if the line is too long
@@ -29,7 +35,6 @@ def _draw_content(window, state, uris):
             window.addstr(index + 2, state.width - 1, '>')
         window.addstr(index + 2, 0, line)
     window.addstr(state.current - state.top + 2, 0, '-> ', curses.A_REVERSE)
-    window.addstr(0, 0, '{} {} {} {} {}'.format(state.current, state.bottom, state.top, state.height, state.width))
 
 
 def _draw(window, state, uris):
@@ -43,18 +48,7 @@ def _handle_move(window, state, uris, dy):
     Move the pointer one line up or down if possible.
     """
     if state.current + dy >= 0 and state.current + dy < len(uris):
-        state.current += dy
-
-    if   dy == -1:  # scroll up
-        if state.current < state.top:
-            window.clear()
-            state.top    -= 1
-            state.bottom -= 1
-    elif dy ==  1:  # scroll down
-        if state.current > state.bottom:
-            window.clear()
-            state.top    += 1
-            state.bottom += 1
+        _handle_jump(window, state, uris, state.current + dy)
 
 
 def _handle_jump(window, state, uris, pos):
@@ -87,9 +81,12 @@ def _handle_resize(window, state, uris):
     from the bottom if that is necessary.
     """
     window.clear()
-    height, width = window.getmaxyx()
 
-    diff = height - state.height
+    height, width = window.getmaxyx()
+    diff          = height - state.height
+    state.height  = height
+    state.width   = width
+
     if diff > 0:  # growing
         if state.bottom < len(uris) - 1:
             new = state.bottom + diff
@@ -101,9 +98,6 @@ def _handle_resize(window, state, uris):
         if height - 4 < state.bottom - state.top:
             new = state.bottom + diff
             state.bottom = new if new >= state.top else state.top
-
-    state.height  = height
-    state.width   = width
 
 
 def _receiver(window, state, uris):
@@ -152,4 +146,4 @@ def show(uris):
     os.environ.setdefault('ESCDELAY', '25')  # no delay when pressing esc
     return curses.wrapper(functools.partial(_init, uris))
 
-print(show(['https://www.{:03d}.example.com '.format(num + 1) + '0123456789' * 10 for num in range(20)]))
+print(show(['https://www.{:03d}.example.com '.format(num + 1) + '0123456789' * 10 for num in range(100)]))
