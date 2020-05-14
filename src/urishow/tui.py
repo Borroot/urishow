@@ -6,15 +6,16 @@ import curses.ascii
 
 class State:
     def __init__(self, height, width, top, bottom, current):
-        self.height  = height
-        self.width   = width
-        self.top     = top
-        self.bottom  = bottom
-        self.current = current
+        self.height  = height   # Total height of the window.
+        self.width   = width    # Total width  of the window.
+        self.top     = top      # Lowest  index from uris shown.
+        self.bottom  = bottom   # Highest index from uris shown.
+        self.current = current  # Currently selected index from uris.
 
 
-def _draw_header(window, num_uris):
-    header = 'UriShow: {} matches (Press q or ctrl-c to Quit)'.format(num_uris)
+def _draw_header(window, width, num_uris):
+    header  = 'UriShow: {} matches'.format(num_uris)
+    header += ' ' * (width - len(header))
     window.addstr(0, 0, header, curses.A_REVERSE)
 
 
@@ -25,8 +26,7 @@ def _draw_content(window, state, uris):
 
 
 def _draw(window, state, uris):
-    # window.clear()
-    _draw_header(window, len(uris))
+    _draw_header(window, state.width, len(uris))
     _draw_content(window, state, uris)
     window.refresh()
 
@@ -47,8 +47,19 @@ def _handle_move(window, state, uris, dy):
             state.bottom += 1
 
 
-def _handle_resize(window, state):
+def _handle_resize(window, state, uris):
     window.clear()
+    height, width = window.getmaxyx()
+
+    # If the bottom element is not shown yet show more on the bottom, otherwise
+    # show more elements at the top.
+    if state.bottom < len(uris) - 1:
+        state.bottom += height - state.height
+    else:
+        state.top    -= height - state.height
+
+    state.height  = height
+    state.width   = width
 
 
 def _receiver(window, state, uris):
@@ -57,7 +68,7 @@ def _receiver(window, state, uris):
 
         c = window.getch()
         if   c == curses.KEY_RESIZE:
-            _handle_resize(window, state)
+            _handle_resize(window, state, uris)
         elif c == ord('k') or c == curses.KEY_UP:
             _handle_move(window, state, uris, -1)
         elif c == ord('j') or c == curses.KEY_DOWN:
@@ -74,7 +85,7 @@ def _init(uris, window):
         curses.curs_set(0)
 
         height, width = window.getmaxyx()
-        state = State(width, height, 0, height - 3, 0)
+        state = State(height, width, 0, height - 3, 0)
         return _receiver(window, state, uris)
     finally:
         curses.curs_set(2)
