@@ -103,7 +103,7 @@ def _handle_help(window, state, uris):
     window.clear()
     if c == curses.KEY_RESIZE:
         _handle_resize(window, state, uris)
-        return _handle_help(window, state, uris)
+        _handle_help(window, state, uris)
 
 
 def _handle_resize(window, state, uris):
