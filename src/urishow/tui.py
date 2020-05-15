@@ -32,13 +32,14 @@ def _draw_content(window, state, uris):
     Draw as much uris as there is space for plus the pointer.
     """
     for index, uri in enumerate(uris[state.top:state.bottom + 1]):
-        line = '{:>7} {}'.format(index + state.top + 1, uri)
-        if len(line) > state.width - 2:  # apply wrapping if the line is too long
-            offset = 10  # an offset for the '...'
-            split = int(state.width / 2) + offset
-            line = line[:split] + '...' + line[len(line) - split + offset * 2 + 5:]
+        line_head = '{:>7} '.format(index + state.top + 1)
+        if len(line_head + uri) > state.width - 2:  # apply wrapping
+            split = int((state.width - len(line_head)) / 2)
+            uri = uri[:split] + '...' + uri[len(uri) - split + 5:]
             window.addstr(index + _State.OFFSET_TOP, state.width - 1, '>')
-        window.addstr(index + _State.OFFSET_TOP, 0, line)
+        window.addstr(index + _State.OFFSET_TOP, 0, line_head)
+        effect = curses.A_UNDERLINE if index + state.top == state.current else curses.A_NORMAL
+        window.addstr(index + _State.OFFSET_TOP, len(line_head), uri, effect)
     window.addstr(state.current - state.top + _State.OFFSET_TOP, 0, '-> ', curses.A_REVERSE)
 
 
@@ -166,4 +167,4 @@ def show(uris):
     os.environ.setdefault('ESCDELAY', '25')  # no delay when pressing esc
     return curses.wrapper(functools.partial(_init, uris))
 
-print(show(['https://www.{:03d}.example.com '.format(num + 1) for num in range(100)]))
+print(show(['https://www.{:03d}.example.com/'.format(num + 1) + '0123456789' * 8 for num in range(100)]))
