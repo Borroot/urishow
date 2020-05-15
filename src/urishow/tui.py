@@ -91,17 +91,19 @@ def _draw_help(window, state):
         window.addstr(0 + _State.OFFSET_TOP - 1, 0, text)
         window.refresh()
     elif state.width > 8 and state.height > 1:
-        _draw_header(window, state.width, 'please resize and try again')
+        _draw_header(window, state.width, 'please resize')
 
 
-def _handle_help(window, state):
+def _handle_help(window, state, uris):
     """
-    Show the help menu and forward a resize event if this occured.
+    Show the help menu until a key is pressed.
     """
     _draw_help(window, state)
     c = window.getch()
     window.clear()
-    return c if c == curses.KEY_RESIZE else None
+    if c == curses.KEY_RESIZE:
+        _handle_resize(window, state, uris)
+        return _handle_help(window, state, uris)
 
 
 def _handle_resize(window, state, uris):
@@ -154,9 +156,6 @@ def _receiver(window, state, uris):
         _draw(window, state, uris)
 
         c = window.getch()
-        if   c == ord('h'):
-            c = _handle_help(window, state)  # forward a resize event
-
         if   c == ord('k') or c == curses.KEY_UP:
             _handle_jump(window, state, uris, _valid_uri(state.current - 1, uris))
         elif c == ord('j') or c == curses.KEY_DOWN:
@@ -184,6 +183,8 @@ def _receiver(window, state, uris):
             _handle_jump(window, state, uris, _valid_uri(state.top + lines, uris))
         elif c == ord('L'):
             _handle_jump(window, state, uris, _valid_uri(state.bottom, uris))
+        elif c == ord('h'):
+            c = _handle_help(window, state, uris)
         elif c == ord('q') or c == 27:  # esc
             return None
         elif c == 10 or c == 13:  # enter
