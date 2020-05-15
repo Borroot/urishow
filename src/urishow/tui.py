@@ -52,10 +52,8 @@ def _valid_uri(uri, uris):
     """
     Make sure that the given uri is within the range of possible values.
     """
-    if uri >= len(uris):
-        return len(uris) - 1
-    if uri < 0:
-        return 0
+    uri = len(uris) - 1 if uri >= len(uris) else uri
+    uri = 0 if uri < 0 else uri
     return uri
 
 
@@ -87,9 +85,6 @@ def _handle_jump(window, state, uris, pos):
     """
     Jump to the given position.
     """
-    if pos < 0 or pos >= len(uris):
-        return
-
     if   state.current > pos:  # jump up
         if pos < state.top:
             window.clear()
@@ -112,18 +107,18 @@ def _receiver(window, state, uris):
 
         c = window.getch()
         if   c == ord('k') or c == curses.KEY_UP:
-            _handle_jump(window, state, uris, state.current - 1)
+            _handle_jump(window, state, uris, _valid_uri(state.current - 1, uris))
         elif c == ord('j') or c == curses.KEY_DOWN:
-            _handle_jump(window, state, uris, state.current + 1)
+            _handle_jump(window, state, uris, _valid_uri(state.current + 1, uris))
         elif c == ord('u'):
             lines = int((state.bottom - state.top) / 2)
             _handle_jump(window, state, uris, _valid_uri(state.current - lines, uris))
         elif c == ord('d'):
             lines = int((state.bottom - state.top) / 2)
             _handle_jump(window, state, uris, _valid_uri(state.current + lines, uris))
-        elif c == ord('g'):
+        elif c == ord('g') or c == curses.KEY_HOME:
             _handle_jump(window, state, uris, 0)
-        elif c == ord('G'):
+        elif c == ord('G') or c == curses.KEY_END:
             _handle_jump(window, state, uris, len(uris) - 1)
         elif c == ord('q') or c == 27:  # esc
             return None
@@ -143,11 +138,9 @@ def _init(uris, window):
 
         # Calculate the intial values for the starting state.
         height, width = window.getmaxyx()
-        maxlines = height - _State.OFFSET_TOTAL
-        bottom   = maxlines - 1 if maxlines < len(uris) else len(uris) - 1
-        state    = _State(height, width, 0, bottom, 0)
+        bottom = _valid_uri(height - _State.OFFSET_TOTAL - 1, uris)
+        state  = _State(height, width, 0, bottom, 0)
 
-        # Start receiving key presses and get the selected uri.
         return _receiver(window, state, uris)
     finally:
         curses.curs_set(2)
