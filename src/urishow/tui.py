@@ -21,8 +21,17 @@ class _State:
         self.current = current  # Currently selected index from uris.
 
 
-def _draw_header(window, width, num_uris):
-    header  = 'UriShow: {} matches'.format(num_uris)
+def _valid_uri(uri, uris):
+    """
+    Make sure that the given uri is within the range of possible values.
+    """
+    uri = len(uris) - 1 if uri >= len(uris) else uri
+    uri = 0 if uri < 0 else uri
+    return uri
+
+
+def _draw_header(window, width, text):
+    header  = 'UriShow: ' + text
     header += ' ' * (width - len(header))
     window.addstr(0, 0, header[:width], curses.A_REVERSE)
 
@@ -45,18 +54,54 @@ def _draw_content(window, state, uris):
 
 def _draw(window, state, uris):
     if state.width > 8 and state.height > 3:
-        _draw_header(window, state.width, len(uris))
+        _draw_header(window, state.width, '{} matches'.format(len(uris)))
         _draw_content(window, state, uris)
         window.refresh()
 
 
-def _valid_uri(uri, uris):
+def _draw_help(window, state):
     """
-    Make sure that the given uri is within the range of possible values.
+    Show the help menu with all the keybindings.
     """
-    uri = len(uris) - 1 if uri >= len(uris) else uri
-    uri = 0 if uri < 0 else uri
-    return uri
+    window.clear()
+    text = \
+    """
+    KEYBINDINGS
+    k - up
+    j - down
+    u - up   half page
+    d - down half page
+    K - up   full page
+    J - down full page
+    g - first
+    G - last
+    H - top
+    M - middle
+    L - bottom
+    h - help
+    q - exit
+    enter - select"""
+    lines = text.count('\n')
+    longest = 0
+    for line in text.split('\n'):
+        longest = len(line) if len(line) > longest else longest
+
+    if lines + _State.OFFSET_TOTAL <= state.height and state.width > longest:
+        _draw_header(window, state.width, 'help')
+        window.addstr(0 + _State.OFFSET_TOP - 1, 0, text)
+        window.refresh()
+    elif state.width > 8 and state.height > 1:
+        _draw_header(window, state.width, 'please resize and try again')
+
+
+def _handle_help(window, state):
+    """
+    Show the help menu and forward a resize event if this occured.
+    """
+    _draw_help(window, state)
+    c = window.getch()
+    window.clear()
+    return c if c == curses.KEY_RESIZE else None
 
 
 def _handle_resize(window, state, uris):
@@ -109,6 +154,9 @@ def _receiver(window, state, uris):
         _draw(window, state, uris)
 
         c = window.getch()
+        if   c == ord('h'):
+            c = _handle_help(window, state)  # forward a resize event
+
         if   c == ord('k') or c == curses.KEY_UP:
             _handle_jump(window, state, uris, _valid_uri(state.current - 1, uris))
         elif c == ord('j') or c == curses.KEY_DOWN:
@@ -125,6 +173,10 @@ def _receiver(window, state, uris):
         elif c == ord('J'):
             lines = state.bottom - state.top
             _handle_jump(window, state, uris, _valid_uri(state.current + lines, uris))
+        elif c == ord('g') or c == curses.KEY_HOME:
+            _handle_jump(window, state, uris, 0)
+        elif c == ord('G') or c == curses.KEY_END:
+            _handle_jump(window, state, uris, len(uris) - 1)
         elif c == ord('H'):
             _handle_jump(window, state, uris, _valid_uri(state.top, uris))
         elif c == ord('M'):
@@ -132,10 +184,6 @@ def _receiver(window, state, uris):
             _handle_jump(window, state, uris, _valid_uri(state.top + lines, uris))
         elif c == ord('L'):
             _handle_jump(window, state, uris, _valid_uri(state.bottom, uris))
-        elif c == ord('g') or c == curses.KEY_HOME:
-            _handle_jump(window, state, uris, 0)
-        elif c == ord('G') or c == curses.KEY_END:
-            _handle_jump(window, state, uris, len(uris) - 1)
         elif c == ord('q') or c == 27:  # esc
             return None
         elif c == 10 or c == 13:  # enter
