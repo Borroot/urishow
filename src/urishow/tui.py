@@ -116,6 +116,19 @@ def _receiver(window, state, uris):
         elif c == ord('d'):
             lines = int((state.bottom - state.top) / 2)
             _handle_jump(window, state, uris, _valid_uri(state.current + lines, uris))
+        elif c == ord('K'):
+            lines = state.bottom - state.top
+            _handle_jump(window, state, uris, _valid_uri(state.current - lines, uris))
+        elif c == ord('J'):
+            lines = state.bottom - state.top
+            _handle_jump(window, state, uris, _valid_uri(state.current + lines, uris))
+        elif c == ord('H'):
+            _handle_jump(window, state, uris, _valid_uri(state.top, uris))
+        elif c == ord('M'):
+            lines = int((state.bottom - state.top) / 2)
+            _handle_jump(window, state, uris, _valid_uri(state.top + lines, uris))
+        elif c == ord('L'):
+            _handle_jump(window, state, uris, _valid_uri(state.bottom, uris))
         elif c == ord('g') or c == curses.KEY_HOME:
             _handle_jump(window, state, uris, 0)
         elif c == ord('G') or c == curses.KEY_END:
