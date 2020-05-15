@@ -24,7 +24,7 @@ class _State:
 def _draw_header(window, width, num_uris):
     header  = 'UriShow: {} matches'.format(num_uris)
     header += ' ' * (width - len(header))
-    window.addstr(0, 0, header, curses.A_REVERSE)
+    window.addstr(0, 0, header[:width], curses.A_REVERSE)
 
 
 def _draw_content(window, state, uris):
@@ -39,14 +39,15 @@ def _draw_content(window, state, uris):
             window.addstr(index + _State.OFFSET_TOP, state.width - 1, '>')
         window.addstr(index + _State.OFFSET_TOP, 0, line_head)
         effect = curses.A_UNDERLINE if index + state.top == state.current else curses.A_NORMAL
-        window.addstr(index + _State.OFFSET_TOP, len(line_head), uri, effect)
+        window.addstr(index + _State.OFFSET_TOP, len(line_head), uri[:state.width - len(line_head)], effect)
     window.addstr(state.current - state.top + _State.OFFSET_TOP, 0, '-> ', curses.A_REVERSE)
 
 
 def _draw(window, state, uris):
-    _draw_header(window, state.width, len(uris))
-    _draw_content(window, state, uris)
-    window.refresh()
+    if state.width > 8 and state.height > 3:
+        _draw_header(window, state.width, len(uris))
+        _draw_content(window, state, uris)
+        window.refresh()
 
 
 def _valid_uri(uri, uris):
@@ -72,7 +73,7 @@ def _handle_resize(window, state, uris):
     state.width   = width
 
     if diff > 0:  # growing
-        if state.bottom < len(uris) - 1:
+        if state.bottom < len(uris) - 1 and state.bottom + diff < height - _State.OFFSET_TOTAL:
             state.bottom = _valid_uri(state.bottom + diff, uris)
         elif state.top > 0:
             state.top = _valid_uri(state.top - diff, uris)
@@ -80,6 +81,7 @@ def _handle_resize(window, state, uris):
         if height - _State.OFFSET_TOTAL <= state.bottom - state.top:
             new = state.bottom + diff
             state.bottom = new if new >= state.top else state.top
+            state.current = state.bottom if state.current > state.bottom else state.current
 
 
 def _handle_jump(window, state, uris, pos):
