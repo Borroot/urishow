@@ -8,6 +8,11 @@ class _State:
     """
     A class to represent the current state of the window and pointer.
     """
+
+    OFFSET_TOP    = 2
+    OFFSET_BOTTOM = 1
+    OFFSET_TOTAL  = OFFSET_TOP + OFFSET_BOTTOM
+
     def __init__(self, height, width, top, bottom, current):
         self.height  = height   # Total height of the window.
         self.width   = width    # Total width  of the window.
@@ -29,12 +34,12 @@ def _draw_content(window, state, uris):
     for index, uri in enumerate(uris[state.top:state.bottom + 1]):
         line = '{:>7} {}'.format(index + state.top + 1, uri)
         if len(line) > state.width - 2:  # apply wrapping if the line is too long
-            offset = 12  # an offset for the '...'
+            offset = 10  # an offset for the '...'
             split = int(state.width / 2) + offset
             line = line[:split] + '...' + line[len(line) - split + offset * 2 + 5:]
-            window.addstr(index + 2, state.width - 1, '>')
-        window.addstr(index + 2, 0, line)
-    window.addstr(state.current - state.top + 2, 0, '-> ', curses.A_REVERSE)
+            window.addstr(index + _State.OFFSET_TOP, state.width - 1, '>')
+        window.addstr(index + _State.OFFSET_TOP, 0, line)
+    window.addstr(state.current - state.top + _State.OFFSET_TOP, 0, '-> ', curses.A_REVERSE)
 
 
 def _draw(window, state, uris):
@@ -43,27 +48,15 @@ def _draw(window, state, uris):
     window.refresh()
 
 
-def _handle_jump(window, state, uris, pos):
+def _valid_uri(uri, uris):
     """
-    Jump to the given position.
+    Make sure that the given uri is within the range of possible values.
     """
-    if pos < 0 or pos >= len(uris):
-        return
-
-    if   state.current > pos:  # jump up
-        if pos < state.top:
-            window.clear()
-            diff = state.bottom - state.top
-            state.top    = pos
-            state.bottom = pos + diff
-        state.current = pos
-    elif state.current < pos:  # jump down
-        if pos > state.bottom:
-            window.clear()
-            diff = state.bottom - state.top
-            state.bottom = pos
-            state.top    = pos - diff
-        state.current = pos
+    if uri >= len(uris):
+        return len(uris) - 1
+    if uri < 0:
+        return 0
+    return uri
 
 
 def _handle_resize(window, state, uris):
@@ -81,15 +74,36 @@ def _handle_resize(window, state, uris):
 
     if diff > 0:  # growing
         if state.bottom < len(uris) - 1:
-            new = state.bottom + diff
-            state.bottom = new if new < len(uris) else len(uris) - 1
+            state.bottom = _valid_uri(state.bottom + diff, uris)
         elif state.top > 0:
-            new = state.top - diff
-            state.top = new if new >= 0 else 0
+            state.top = _valid_uri(state.top - diff, uris)
     elif diff < 0:  # shrinking
-        if height - 4 < state.bottom - state.top:
+        if height - _State.OFFSET_TOTAL <= state.bottom - state.top:
             new = state.bottom + diff
             state.bottom = new if new >= state.top else state.top
+
+
+def _handle_jump(window, state, uris, pos):
+    """
+    Jump to the given position.
+    """
+    if pos < 0 or pos >= len(uris):
+        return
+
+    if   state.current > pos:  # jump up
+        if pos < state.top:
+            window.clear()
+            lines = state.bottom - state.top
+            state.top    = pos
+            state.bottom = pos + lines
+        state.current = pos
+    elif state.current < pos:  # jump down
+        if pos > state.bottom:
+            window.clear()
+            lines = state.bottom - state.top
+            state.bottom = pos
+            state.top    = pos - lines
+        state.current = pos
 
 
 def _receiver(window, state, uris):
@@ -101,6 +115,12 @@ def _receiver(window, state, uris):
             _handle_jump(window, state, uris, state.current - 1)
         elif c == ord('j') or c == curses.KEY_DOWN:
             _handle_jump(window, state, uris, state.current + 1)
+        elif c == ord('u'):
+            lines = int((state.bottom - state.top) / 2)
+            _handle_jump(window, state, uris, _valid_uri(state.current - lines, uris))
+        elif c == ord('d'):
+            lines = int((state.bottom - state.top) / 2)
+            _handle_jump(window, state, uris, _valid_uri(state.current + lines, uris))
         elif c == ord('g'):
             _handle_jump(window, state, uris, 0)
         elif c == ord('G'):
@@ -123,9 +143,11 @@ def _init(uris, window):
 
         # Calculate the intial values for the starting state.
         height, width = window.getmaxyx()
-        bottom = height - 4 if height - 3 < len(uris) else len(uris) - 1
-        state = _State(height, width, 0, bottom, 0)
+        maxlines = height - _State.OFFSET_TOTAL
+        bottom   = maxlines - 1 if maxlines < len(uris) else len(uris) - 1
+        state    = _State(height, width, 0, bottom, 0)
 
+        # Start receiving key presses and get the selected uri.
         return _receiver(window, state, uris)
     finally:
         curses.curs_set(2)
