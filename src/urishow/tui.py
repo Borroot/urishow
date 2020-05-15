@@ -43,20 +43,12 @@ def _draw(window, state, uris):
     window.refresh()
 
 
-def _handle_move(window, state, uris, dy):
-    """
-    Move the pointer one line up or down if possible.
-    """
-    if state.current + dy >= 0 and state.current + dy < len(uris):
-        _handle_jump(window, state, uris, state.current + dy)
-
-
 def _handle_jump(window, state, uris, pos):
     """
     Jump to the given position.
     """
     if pos < 0 or pos >= len(uris):
-        raise ValueError("Invalid value for 'pos'.")
+        return
 
     if   state.current > pos:  # jump up
         if pos < state.top:
@@ -106,9 +98,9 @@ def _receiver(window, state, uris):
 
         c = window.getch()
         if   c == ord('k') or c == curses.KEY_UP:
-            _handle_move(window, state, uris, -1)
+            _handle_jump(window, state, uris, state.current - 1)
         elif c == ord('j') or c == curses.KEY_DOWN:
-            _handle_move(window, state, uris,  1)
+            _handle_jump(window, state, uris, state.current + 1)
         elif c == ord('g'):
             _handle_jump(window, state, uris, 0)
         elif c == ord('G'):
@@ -146,4 +138,4 @@ def show(uris):
     os.environ.setdefault('ESCDELAY', '25')  # no delay when pressing esc
     return curses.wrapper(functools.partial(_init, uris))
 
-print(show(['https://www.{:03d}.example.com '.format(num + 1) + '0123456789' * 10 for num in range(100)]))
+print(show(['https://www.{:03d}.example.com '.format(num + 1) for num in range(100)]))
