@@ -43,8 +43,9 @@ def _draw_content(window, state, uris):
     for index, uri in enumerate(uris[state.top:state.bottom + 1]):
         line_head = '{:>7} '.format(index + state.top + 1)
         if len(line_head + uri) > state.width - 2:  # apply wrapping
-            split = int((state.width - len(line_head)) / 2)
-            uri = uri[:split] + '...' + uri[len(uri) - split + 5:]
+            split = int((state.width - len(line_head)) / 2 + 0.5)
+            offset = 0 if state.width % 2 == 0 else 1  # always have one open space before the '>'
+            uri = uri[:split] + '...' + uri[len(uri) - split + 5 + offset:]
             window.addstr(index + _State.OFFSET_TOP, state.width - 1, '>')
         window.addstr(index + _State.OFFSET_TOP, 0, line_head)
         effect = curses.A_UNDERLINE if index + state.top == state.current else curses.A_NORMAL
