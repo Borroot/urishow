@@ -120,16 +120,18 @@ def _handle_resize(window, state, uris):
     state.height  = height
     state.width   = width
 
-    if diff > 0:  # growing
-        if state.bottom < len(uris) - 1 and state.bottom + diff < height - _State.OFFSET_TOTAL:
+    if diff > 0 and state.bottom - state.top + diff < height - _State.OFFSET_TOTAL:
+        if state.bottom < len(uris) - 1:
             state.bottom = _valid_uri(state.bottom + diff, uris)
         elif state.top > 0:
             state.top = _valid_uri(state.top - diff, uris)
-    elif diff < 0:  # shrinking
-        if height - _State.OFFSET_TOTAL <= state.bottom - state.top:
+    elif diff < 0 and state.bottom - state.top - diff > height - _State.OFFSET_TOTAL:
+        if state.bottom != state.current:
             new = state.bottom + diff
             state.bottom = new if new >= state.top else state.top
-            state.current = state.bottom if state.current > state.bottom else state.current
+        else:
+            new = state.top - diff
+            state.top = new if new <= state.bottom else state.bottom
 
 
 def _handle_jump(window, state, uris, pos):
