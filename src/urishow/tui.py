@@ -1,4 +1,5 @@
 import functools
+import math
 import os
 import curses
 import curses.ascii
@@ -30,34 +31,45 @@ def _valid_uri(uri, uris):
     return uri
 
 
-def _draw_header(window, width, text):
-    header  = 'UriShow: ' + text
-    header += ' ' * (width - len(header))
-    window.addstr(0, 0, header[:width], curses.A_REVERSE)
+def _draw_header(window, state, text):
+    if state.width > 1 and state.height > 1:
+        header  = 'UriShow: ' + text
+        header += ' ' * (state.width - len(header))
+        window.addstr(0, 0, header[:state.width], curses.A_REVERSE)
 
 
 def _draw_content(window, state, uris):
     """
     Draw as much uris as there is space for plus the pointer.
     """
+    width = 5 + max(3, int(math.log10(state.bottom + 1)) + 1)
+    if state.width <= width or state.height <= 3:
+        return
+
     for index, uri in enumerate(uris[state.top:state.bottom + 1]):
-        line_head = '{:>7} '.format(index + state.top + 1)
-        if len(line_head + uri) > state.width - 2:  # apply wrapping
-            split = int((state.width - len(line_head)) / 2 + 0.5)
-            offset = 0 if state.width % 2 == 0 else 1  # always have one open space before the '>'
-            uri = uri[:split] + '...' + uri[len(uri) - split + 5 + offset:]
+        line_head = '    {:>3} '.format(index + state.top + 1)
+
+        if len(line_head + uri) > state.width - 2:
+            split = int((state.width - len(line_head)) / 2)
+
+            # The 'left' variable is the amount of space left on the screen
+            # after writing everything before, and including, the three dots.
+            left = state.width - (len(line_head) + len(uri[:split]) + 3 + 2)
+            uri = uri[:split] + '...' + uri[len(uri) - left:]
+            uri = uri[:state.width - len(line_head)]  # make 100% sure it fits
             window.addstr(index + _State.OFFSET_TOP, state.width - 1, '>')
+
         window.addstr(index + _State.OFFSET_TOP, 0, line_head)
         effect = curses.A_UNDERLINE if index + state.top == state.current else curses.A_NORMAL
-        window.addstr(index + _State.OFFSET_TOP, len(line_head), uri[:state.width - len(line_head)], effect)
+        window.addstr(index + _State.OFFSET_TOP, len(line_head), uri, effect)
+
     window.addstr(state.current - state.top + _State.OFFSET_TOP, 0, '-> ', curses.A_REVERSE)
 
 
 def _draw(window, state, uris):
-    if state.width > 8 and state.height > 3:
-        _draw_header(window, state.width, '{} matches'.format(len(uris)))
-        _draw_content(window, state, uris)
-        window.refresh()
+    _draw_header(window, state, '{} matches'.format(len(uris)))
+    _draw_content(window, state, uris)
+    window.refresh()
 
 
 def _draw_help(window, state):
@@ -87,12 +99,14 @@ def _draw_help(window, state):
     for line in text.split('\n'):
         longest = len(line) if len(line) > longest else longest
 
+    # If there is enough space to draw the whole help then show it, otherwise
+    # ask the user to resize the window.
     if lines + _State.OFFSET_TOTAL <= state.height and state.width > longest:
-        _draw_header(window, state.width, 'help')
+        _draw_header(window, state, 'help')
         window.addstr(0 + _State.OFFSET_TOP - 1, 0, text)
         window.refresh()
-    elif state.width > 8 and state.height > 1:
-        _draw_header(window, state.width, 'please resize')
+    else:
+        _draw_header(window, state, 'please resize')
 
 
 def _handle_help(window, state, uris):
@@ -221,4 +235,4 @@ def show(uris):
     os.environ.setdefault('ESCDELAY', '25')  # no delay when pressing esc
     return curses.wrapper(functools.partial(_init, uris))
 
-print(show(['https://www.{:03d}.example.com/'.format(num + 1) + '0123456789' * 8 for num in range(100)]))
+print(show(['https://www.{:03d}.example.com/'.format(num + 1) + '0123456789' * 8 for num in range(10000)]))
