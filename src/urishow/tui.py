@@ -124,6 +124,19 @@ def _handle_help(window, state, uris):
         _handle_help(window, state, uris)
 
 
+def _handle_copy(window, state, uris):
+    """
+    Copy the currently selected uri to the clipboard using xclip.
+    """
+    cmd = 'echo {} | xclip -i -sel clip 2> /dev/null'.format(uris[state.current])
+    if os.system(cmd):
+        text = 'Copying requires xclip.'
+    else:
+        text = 'Copied uri {} to the clipboard.'.format(state.current + 1)
+    window.addstr(state.height - 1, 0, text + ' ' * (state.width - len(text) - 1))
+    window.refresh()
+
+
 def _handle_resize(window, state, uris):
     """
     When growing, if the bottom element is not shown yet show more on the
@@ -264,6 +277,8 @@ def _receiver(window, state, uris):
             _handle_jump(window, state, uris, _valid_uri(state.bottom, uris))
         elif ord('0') <= c <= ord('9'):
             _handle_jump_number(window, state, uris, c - ord('0'))
+        elif c == ord('c'):
+            _handle_copy(window, state, uris)
         elif c == ord('h') or c == ord('?'):
             c = _handle_help(window, state, uris)
         elif c == ord('q') or c == 27:  # esc
