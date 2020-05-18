@@ -1,8 +1,10 @@
 import functools
 import math
 import os
+import re
 import curses
 import curses.ascii
+import curses.textpad
 
 
 class _State:
@@ -43,7 +45,7 @@ def _draw_content(window, state, uris):
     Draw as much uris as there is space for plus the pointer.
     """
     width = 5 + max(3, int(math.log10(state.bottom + 1)) + 1)
-    if state.width <= width or state.height <= 3:
+    if state.width <= width or state.height < 4:
         return
 
     for index, uri in enumerate(uris[state.top:state.bottom + 1]):
@@ -91,8 +93,9 @@ def _draw_help(window, state):
     H - top
     M - middle
     L - bottom
-    h - help
-    q - exit
+    0-9   - jump
+    h ?   - help
+    q esc - exit
     enter - select"""
     lines = text.count('\n')
     longest = 0
@@ -148,6 +151,65 @@ def _handle_resize(window, state, uris):
             state.top = new if new <= state.bottom else state.bottom
 
 
+def _handle_command(window, state, uris, info, prior):
+    """
+    Show the info on the bottom and let the user write text which is returned.
+    :param info: Information shown before the command edit field.
+    :param prior: Text that should be in the command field already.
+    :raises ValueError: If something went wrong and there is no output.
+    """
+    # Throw an exception if the window is too small.
+    if state.width < len(info) + len(prior) + 1 or state.height < 4:
+        raise ValueError()
+
+    window.addstr(state.height - 1, 0, info)
+    window.refresh()
+
+    # Show and create the command window with the prior information.
+    cmdwindow = curses.newwin(0, 0, state.height - 1, len(info))
+    cmdwindow.addstr(0, 0, prior)
+    textpad = curses.textpad.Textbox(cmdwindow, insert_mode=True)
+
+    def _clear():
+        window.addstr(state.height - 1, 0, ' ' * (state.width - 1))
+        window.refresh()
+        curses.curs_set(0)
+
+    def _validator(c):
+        # Throw an exception if the window is resized while editing.
+        if   c == curses.KEY_RESIZE:
+            _handle_resize(window, state, uris)
+            _clear()
+            raise ValueError()
+        elif c == ord('q') or c == 27:
+            _clear()
+            raise ValueError()
+        else:
+            return c
+
+    curses.curs_set(2)
+    textpad.edit(_validator)
+    curses.curs_set(0)
+
+    return textpad.gather().strip()
+
+
+def _handle_jump_number(window, state, uris, number):
+    """
+    Allow the user to jump to a uri number.
+    """
+    try:
+        uri = _handle_command(window, state, uris, 'Jump to: ', str(number))
+
+        if re.match(r'^\d+$', uri) and 1 <= int(uri) <= len(uris):
+            _handle_jump(window, state, uris, int(uri) - 1)
+        else:
+            error = 'Please enter a valid uri number.'[:state.width - 1]
+            window.addstr(state.height - 1, 0, error)
+    except ValueError:
+        pass
+
+
 def _handle_jump(window, state, uris, pos):
     """
     Jump to the given position.
@@ -200,7 +262,9 @@ def _receiver(window, state, uris):
             _handle_jump(window, state, uris, _valid_uri(state.top + lines, uris))
         elif c == ord('L'):
             _handle_jump(window, state, uris, _valid_uri(state.bottom, uris))
-        elif c == ord('h'):
+        elif ord('0') <= c <= ord('9'):
+            _handle_jump_number(window, state, uris, c - ord('0'))
+        elif c == ord('h') or c == ord('?'):
             c = _handle_help(window, state, uris)
         elif c == ord('q') or c == 27:  # esc
             return None
@@ -235,4 +299,4 @@ def show(uris):
     os.environ.setdefault('ESCDELAY', '25')  # no delay when pressing esc
     return curses.wrapper(functools.partial(_init, uris))
 
-print(show(['https://www.{:03d}.example.com/'.format(num + 1) + '0123456789' * 8 for num in range(10000)]))
+print(show(['https://www.{:03d}.example.com/'.format(num + 1) + '0123456789' * 8 for num in range(9999)]))
