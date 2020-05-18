@@ -134,7 +134,8 @@ def _handle_copy(window, state, uris):
         text = 'Copying requires xclip.'
     else:
         text = 'Copied uri {} to the clipboard.'.format(state.current + 1)
-    window.addstr(state.height - 1, 0, text + ' ' * (state.width - len(text) - 1))
+    text = text + ' ' * (state.width - len(text) - 1)
+    window.addstr(state.height - 1, 0, text[:state.width - 1])
     window.refresh()
 
 
