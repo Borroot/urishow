@@ -93,6 +93,7 @@ def _draw_help(window, state):
     H - top
     M - middle
     L - bottom
+    c - to clipboard
     0-9   - jump
     h ?   - help
     q esc - exit
