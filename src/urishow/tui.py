@@ -94,8 +94,8 @@ def _draw_help(window, state):
     M - middle
     L - bottom
     c - to clipboard
-    0-9   - jump
-    h ?   - help
+    h - help
+    <0-9> - jump
     q esc - exit
     enter - select"""
     lines = text.count('\n')
@@ -281,7 +281,7 @@ def _receiver(window, state, uris):
             _handle_jump_number(window, state, uris, c - ord('0'))
         elif c == ord('c'):
             _handle_copy(window, state, uris)
-        elif c == ord('h') or c == ord('?'):
+        elif c == ord('h'):
             c = _handle_help(window, state, uris)
         elif c == ord('q') or c == 27:  # esc
             return None
@@ -315,5 +315,3 @@ def show(uris):
     """
     os.environ.setdefault('ESCDELAY', '25')  # no delay when pressing esc
     return curses.wrapper(functools.partial(_init, uris))
-
-print(show(['https://www.{:03d}.example.com/'.format(num + 1) + '0123456789' * 8 for num in range(9999)]))
