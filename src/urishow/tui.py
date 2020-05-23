@@ -250,6 +250,8 @@ def _receiver(window, state, uris):
         _draw(window, state, uris)
 
         c = window.getch()
+        window.addstr(0, 0, str(c))
+        window.refresh()
         if   c == ord('k') or c == curses.KEY_UP:
             _handle_jump(window, state, uris, _valid_uri(state.current - 1, uris))
         elif c == ord('j') or c == curses.KEY_DOWN:
