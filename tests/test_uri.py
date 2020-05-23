@@ -1,5 +1,5 @@
 import sys, os
-sys.path.append(os.path.realpath(os.path.dirname(__file__)+"/../src/urishow/"))
+sys.path.append(os.path.realpath(os.path.dirname(__file__)+"/../src"))
 
 import pytest
 from main import _extract

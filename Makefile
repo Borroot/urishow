@@ -1,21 +1,25 @@
 SRC_DIR   = src/urishow
-SRC_FILES = $(wildcard $(SRC_DIR)/*.py)
+SRC_FILES = src/urishow/main.py
+
+PREFIX    = /usr/local
+BUILD     = dist
 
 PYFLAGS   = --noconfirm --onefile --paths $(SRC_DIR)
-TARGET    = urishow
 
-all: $(TARGET)
+all: urishow
 
 urishow: $(SRC_FILES)
-	@echo "Building binaries for $@."
-	@pyinstaller $(PYFLAGS) --name $@ $^
+	pyinstaller $(PYFLAGS) --name $@ $^
 
 clean:
 	rm -rf build dist $(TARGET).spec __init__.spec
-	@pyclean
 
-re:
-	@$(MAKE) clean
-	@$(MAKE)
+install: all
+	mkdir -p $(PREFIX)/bin
+	cp -f $(BUILD)/urishow $(PREFIX)/bin
+	chmod 755 $(PREFIX)/bin/urishow
 
-.PHONY: all clean re
+uninstall:
+	rm -f $(PREFIX)/bin/urishow
+
+.PHONY: all clean install uninstall
