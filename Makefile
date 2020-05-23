@@ -1,18 +1,16 @@
-SRC_DIR   = src/urishow
-SRC_FILES = src/urishow/main.py
-
-PREFIX    = /usr/local
+SRC       = src/main.py src/tui.py
 BUILD     = dist
+PREFIX    = /usr/local
 
-PYFLAGS   = --noconfirm --onefile --paths $(SRC_DIR)
+PYFLAGS   = --noconfirm --onefile --paths src
 
 all: urishow
 
-urishow: $(SRC_FILES)
+urishow: $(SRC)
 	pyinstaller $(PYFLAGS) --name $@ $^
 
 clean:
-	rm -rf build dist $(TARGET).spec __init__.spec
+	rm -rf build dist urishow.spec __init__.spec
 
 install: all
 	mkdir -p $(PREFIX)/bin
