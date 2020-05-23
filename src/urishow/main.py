@@ -12,7 +12,7 @@ def _launch(uri, cmd=None):
     Launch the uri with the correct command.
     """
     if cmd is None:
-        if re.match(r'mailto', uri) and os.environ.get('MAIL') is not None:
+        if re.match(r'mailto:', uri) and os.environ.get('MAIL') is not None:
             cmd = os.environ.get('MAIL')
         else:
             cmd = os.environ.get('BROWSER')
@@ -25,7 +25,9 @@ def _extract(text, regex=None):
     """
     if regex is None:
         regex = r'((https?|mailto):(//)?[^ <>"\t]*|(www)[0-9]?\.[-a-z0-9.]+)[^ .,;\t\n\r<">\):]?[^, <>"\t]*[^ .,;\t\n\r<">\):]'
-    return [match[0] for match in re.findall(regex, text)]
+        return [match[0] for match in re.findall(regex, text)]
+    else:
+        return re.findall(regex, text)
 
 
 def _read(fd):
