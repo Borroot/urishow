@@ -13,10 +13,12 @@ def _launch(uri, cmd=None):
     """
     if cmd is None:
         if re.match(r'mailto:', uri) and os.environ.get('MAIL') is not None:
-            cmd = os.environ.get('MAIL')
+            cmd = os.environ.get('TERMINAL') + ' -e ' + os.environ.get('MAIL')
         else:
             cmd = os.environ.get('BROWSER')
-    os.system("{} '{}' 2> /dev/null".format(cmd, uri))
+        os.system("{} '{}' 2> /dev/null > /dev/null &".format(cmd, uri))
+    else:
+        os.system("{} '{}' &".format(cmd, uri))
 
 
 def _extract(text, regex=None):
@@ -24,7 +26,7 @@ def _extract(text, regex=None):
     Extract all the uris from the given text.
     """
     if regex is None:
-        regex = r'(?:https?|mailto)://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|\
+        regex = r'(?:https?://|mailto:)(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|\
                 (?:%[0-9a-fA-F][0-9a-fA-F]))+'
     return re.findall(regex, text)
 
