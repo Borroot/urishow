@@ -24,10 +24,9 @@ def _extract(text, regex=None):
     Extract all the uris from the given text.
     """
     if regex is None:
-        regex = r'((https?|mailto):(//)?[^ <>"\t]*|(www)[0-9]?\.[-a-z0-9.]+)[^ .,;\t\n\r<">\):]?[^, <>"\t]*[^ .,;\t\n\r<">\):]'
-        return [match[0] for match in re.findall(regex, text)]
-    else:
-        return re.findall(regex, text)
+        regex = r'(?:https?|mailto)://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|\
+                (?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    return re.findall(regex, text)
 
 
 def _read(fd):
