@@ -5,6 +5,7 @@ import re
 import os
 import sys
 import tui
+import urlextract
 
 
 def _launch(uri, cmd=None):
@@ -25,10 +26,13 @@ def _extract(text, regex=None):
     """
     Extract all the uris from the given text.
     """
-    if regex is None:
-        regex = r'(?:https?://|mailto:)(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|\
-                (?:%[0-9a-fA-F][0-9a-fA-F]))+'
-    return re.findall(regex, text)
+    text = text.replace('=\n', '')
+    if regex is not None:
+        return re.findall(regex, text)
+
+    extractor = urlextract.URLExtract()
+    extractor.extract_email = True
+    return extractor.find_urls(text, only_unique=True)
 
 
 def _read(fd):

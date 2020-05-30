@@ -10,7 +10,7 @@ urishow: $(SRC)
 	pyinstaller $(PYFLAGS) --name $@ $^
 
 clean:
-	rm -rf build dist urishow.spec __init__.spec
+	rm -rf $(BUILD) build urishow.spec __init__.spec
 
 install: all
 	mkdir -p $(PREFIX)/bin
